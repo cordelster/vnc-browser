@@ -3,7 +3,14 @@ name: Build, Test & Push images
 on:
   push:
     tags:
-      - "*.*.*"   # e.g., 1.0.0, 2.1.3
+      - "*.*.*"               # e.g., 1.0.0, 2.1.3 (builds all variants)
+      - "*.*.*-*"             # e.g., 1.0.0-dev, 1.0.1-rc1 (builds all variants)
+      - "alpine-*.*.*"        # e.g., alpine-1.0.0 (builds only alpine)
+      - "alpine-*.*.*-*"      # e.g., alpine-1.0.0-rc1 (builds only alpine)
+      - "debian-*.*.*"        # e.g., debian-1.0.0 (builds only debian)
+      - "debian-*.*.*-*"      # e.g., debian-1.0.0-rc1 (builds only debian)
+      - "ha-alpine-*.*.*"     # e.g., ha-alpine-1.0.0 (builds only ha-alpine)
+      - "ha-alpine-*.*.*-*"   # e.g., ha-alpine-1.0.0-rc1 (builds only ha-alpine)
   workflow_dispatch:
 
 env:
@@ -53,6 +60,25 @@ jobs:
         id: vars
         run: echo "VERSION_TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
+      - name: Check if should build this variant
+        id: should_build
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VARIANT="${{ matrix.tag }}"
+
+          # If tag starts with variant name (e.g., "ha-alpine-1.0.0"), build only that variant
+          if [[ "$TAG" == "$VARIANT-"* ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "Building $VARIANT because tag starts with variant name: $TAG"
+          # If tag has no variant prefix (e.g., "1.0.0"), build all variants
+          elif [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+            echo "Building all variants because tag has no prefix: $TAG"
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+            echo "Skipping $VARIANT because tag doesn't match: $TAG"
+          fi
+
       - name: Extract OCI metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -70,6 +96,7 @@ jobs:
 
       # Build only one architecture image for testing to being able to --load it
       - name: Build ${{ matrix.variant }} image for test
+        if: steps.should_build.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -84,6 +111,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test container startup
+        if: steps.should_build.outputs.build == 'true'
         run: |
           docker run -d --rm --name test-${{ matrix.tag }} \
             -p 5900:5900 -p 6080:6080 \
@@ -97,6 +125,7 @@ jobs:
 
       # Build and push multi-arch images
       - name: Push multi-arch ${{ matrix.variant }} image
+        if: steps.should_build.outputs.build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
