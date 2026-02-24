@@ -56,30 +56,40 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Determine tag name
-        id: vars
-        run: echo "VERSION_TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check if should build this variant
-        id: should_build
+      - name: Determine version tag and build decision
+        id: vars
         run: |
           TAG="${GITHUB_REF_NAME}"
           VARIANT="${{ matrix.tag }}"
 
-          # If tag starts with variant name (e.g., "ha-alpine-1.0.0"), build only that variant
+          # Strip variant prefix from tag if present
+          # e.g., "ha-alpine-1.0.1-rc1" -> "1.0.1-rc1"
+          # e.g., "1.0.0" -> "1.0.0"
           if [[ "$TAG" == "$VARIANT-"* ]]; then
-            echo "build=true" >> $GITHUB_OUTPUT
-            echo "Building $VARIANT because tag starts with variant name: $TAG"
-          # If tag has no variant prefix (e.g., "1.0.0"), build all variants
+            VERSION_TAG="${TAG#$VARIANT-}"
+            SHOULD_BUILD="true"
+            echo "Building $VARIANT - tag starts with variant name: $TAG -> $VERSION_TAG"
           elif [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            echo "build=true" >> $GITHUB_OUTPUT
-            echo "Building all variants because tag has no prefix: $TAG"
+            VERSION_TAG="$TAG"
+            SHOULD_BUILD="true"
+            echo "Building all variants - no prefix in tag: $TAG"
           else
-            echo "build=false" >> $GITHUB_OUTPUT
-            echo "Skipping $VARIANT because tag doesn't match: $TAG"
+            VERSION_TAG="$TAG"
+            SHOULD_BUILD="false"
+            echo "Skipping $VARIANT - tag doesn't match: $TAG"
           fi
 
-      - name: Extract OCI metadata
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "SHOULD_BUILD=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
+      - name: Extract OCI metadata for Docker Hub
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -94,9 +104,24 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Extract OCI metadata for GHCR (HA addon only)
+        id: meta_ghcr
+        if: matrix.tag == 'ha-alpine'
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/vnc-browser
+          tags: |
+            type=raw,value=${{ matrix.tag }}
+            type=raw,value=${{ matrix.tag }}-${{ steps.vars.outputs.VERSION_TAG }}
+          labels: |
+            org.opencontainers.image.title=VNC Browser (${{ matrix.tag }})
+            org.opencontainers.image.version=${{ steps.vars.outputs.VERSION_TAG }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
       # Build only one architecture image for testing to being able to --load it
       - name: Build ${{ matrix.variant }} image for test
-        if: steps.should_build.outputs.build == 'true'
+        if: steps.vars.outputs.SHOULD_BUILD == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -111,21 +136,24 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test container startup
-        if: steps.should_build.outputs.build == 'true'
+        if: steps.vars.outputs.SHOULD_BUILD == 'true'
         run: |
           docker run -d --rm --name test-${{ matrix.tag }} \
             -p 5900:5900 -p 6080:6080 \
             -e VNC_PASSWORD=testpass \
             ${{ env.IMAGE_NAME }}:${{ matrix.tag }}
           echo "Waiting for container to start..."
-          sleep 10
-          docker ps
+          sleep 15
+          echo "Checking container status..."
+          docker ps -a
+          docker logs test-${{ matrix.tag }} || true
+          echo "Testing noVNC connection..."
           curl -sSf http://localhost:6080 > /dev/null
           echo "Test passed for ${{ matrix.tag }}"
 
-      # Build and push multi-arch images
-      - name: Push multi-arch ${{ matrix.variant }} image
-        if: steps.should_build.outputs.build == 'true'
+      # Build and push multi-arch images to Docker Hub
+      - name: Push multi-arch ${{ matrix.variant }} image to Docker Hub
+        if: steps.vars.outputs.SHOULD_BUILD == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -134,6 +162,21 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Push HA addon variant to GHCR
+      - name: Push multi-arch ha-alpine image to GHCR
+        if: steps.vars.outputs.SHOULD_BUILD == 'true' && matrix.tag == 'ha-alpine'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.meta_ghcr.outputs.tags }}
+          labels: ${{ steps.meta_ghcr.outputs.labels }}
           build-args: ${{ matrix.build_args || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

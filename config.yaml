@@ -87,5 +87,5 @@ schema:
 
 # Use pre-built image from GitHub Container Registry
 # Comment out 'image' and use build.yaml for local builds
-image: "ghcr.io/mrcolorr/vnc-browser-{arch}:ha-alpine"
+image: "ghcr.io/cordelster/vnc-browser:ha-alpine"
 
