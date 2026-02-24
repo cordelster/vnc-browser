@@ -1,6 +1,6 @@
 name: "VNC Browser"
 description: "Lightweight VNC-accessible web browsing environment with noVNC support"
-version: "1.0.0"
+version: "ha-alpine-1.0.1-rc2"
 slug: "vnc_browser"
 url: "https://github.com/MRColorR/vnc-browser"
 arch:
@@ -27,7 +27,7 @@ ports_description:
 
 # Storage
 map:
-  - share:rw
+  - config:rw
 
 # Options with defaults
 options:
@@ -87,5 +87,4 @@ schema:
 
 # Use pre-built image from GitHub Container Registry
 # Comment out 'image' and use build.yaml for local builds
-image: "ghcr.io/cordelster/vnc-browser:ha-alpine"
-
+image: "ghcr.io/cordelster/vnc-browser"

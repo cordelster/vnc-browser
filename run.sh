@@ -71,10 +71,10 @@ if bashio::config.exists 'enable_customization'; then
     export CUSTOMIZE=$(bashio::config 'enable_customization')
 fi
 
-# Map custom scripts directory to /share
-if [ -d "/share/vnc_browser_custom_scripts" ]; then
-    export CUSTOM_ENTRYPOINTS_DIR="/share/vnc_browser_custom_scripts"
-    bashio::log.info "Custom scripts directory found: ${CUSTOM_ENTRYPOINTS_DIR}"
+# Map custom scripts directory to /config/vnc_browser/scripts
+if [ -d "/config/vnc_browser/scripts" ]; then
+    export CUSTOM_ENTRYPOINTS_DIR="/config/vnc_browser/scripts"
+    echo "Custom scripts directory found: ${CUSTOM_ENTRYPOINTS_DIR}"
 fi
 
 bashio::log.info "Configuration loaded successfully"

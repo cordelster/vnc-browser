@@ -55,7 +55,7 @@ configuration:
   # Customization Section
   enable_customization:
     name: "Enable Custom Scripts"
-    description: "Enable execution of custom .sh or .py scripts from /share/vnc_browser_custom_scripts directory. Scripts run in alphabetical order on startup."
+    description: "Enable execution of custom .sh or .py scripts from /config/vnc_browser/scripts/ directory. Scripts run in alphabetical order on startup. Accessible via File Editor or Samba share."
 
 network:
   6080/tcp: "noVNC web interface - Access your browser through any web browser at http://homeassistant.local:6080"
