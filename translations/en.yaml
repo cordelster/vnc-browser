@@ -1,0 +1,62 @@
+configuration:
+  # VNC Configuration Section
+  vnc_password:
+    name: "VNC Password"
+    description: "Password required to access the VNC server. Keep this secure!"
+  vnc_resolution:
+    name: "VNC Resolution"
+    description: "Display resolution in WIDTHxHEIGHT format (e.g., 1280x720, 1920x1080, 2560x1440)"
+
+  # Browser Configuration Section
+  starting_url:
+    name: "Starting Website URL"
+    description: "Initial webpage to load when browser starts (must be a valid URL)"
+  auto_start_browser:
+    name: "Auto-start Browser"
+    description: "Automatically launch the Firefox web browser when the addon starts"
+  browser_options:
+    name: "Browser Options"
+    description: "Additional command-line options for Firefox (e.g., --kiosk for fullscreen kiosk mode, --private-window for private browsing)"
+
+  # Display Configuration Section
+  auto_start_xterm:
+    name: "Auto-start Terminal"
+    description: "Automatically launch xterm terminal emulator on startup"
+  auto_start_window_manager:
+    name: "Auto-start Window Manager"
+    description: "Automatically launch Fluxbox window manager to provide window controls and menus"
+
+  # Advanced VNC Options Section
+  auto_start_vnc:
+    name: "Auto-start VNC Server"
+    description: "Automatically start x11vnc server for direct VNC client access on port 5900"
+  auto_start_novnc:
+    name: "Auto-start noVNC"
+    description: "Automatically start noVNC (websockify) for browser-based VNC access on port 6080"
+  auto_start_xvfb:
+    name: "Auto-start Virtual Display"
+    description: "Automatically start Xvfb (X virtual framebuffer) - required for VNC to work"
+  x11vnc_options:
+    name: "x11vnc Options"
+    description: "Additional command-line options for x11vnc server (e.g., -nocursor to hide cursor)"
+  xvfb_options:
+    name: "Xvfb Options"
+    description: "Additional command-line options for Xvfb virtual display server"
+  wm_options:
+    name: "Window Manager Options"
+    description: "Additional command-line options for Fluxbox window manager (e.g., -rc /path/to/config)"
+  novnc_options:
+    name: "noVNC Options"
+    description: "Additional command-line options for websockify/noVNC (e.g., --heartbeat=10)"
+  xterm_options:
+    name: "Terminal Options"
+    description: "Additional command-line options for xterm terminal emulator"
+
+  # Customization Section
+  enable_customization:
+    name: "Enable Custom Scripts"
+    description: "Enable execution of custom .sh or .py scripts from /share/vnc_browser_custom_scripts directory. Scripts run in alphabetical order on startup."
+
+network:
+  6080/tcp: "noVNC web interface - Access your browser through any web browser at http://homeassistant.local:6080"
+  5900/tcp: "Direct VNC server access - Connect using a VNC client application (RealVNC, TightVNC, etc.)"

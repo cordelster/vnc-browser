@@ -27,6 +27,11 @@ jobs:
             dockerfile: ./alpine.dockerfile
             tag: alpine
             latest: false
+          - variant: ha-alpine
+            dockerfile: ./ha-alpine.dockerfile
+            tag: ha-alpine
+            latest: false
+            build_args: "BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.23"
 
     steps:
       - name: Check out repository
@@ -74,6 +79,7 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -99,5 +105,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: ${{ matrix.build_args || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -1,0 +1,91 @@
+name: "VNC Browser"
+description: "Lightweight VNC-accessible web browsing environment with noVNC support"
+version: "1.0.0"
+slug: "vnc_browser"
+url: "https://github.com/MRColorR/vnc-browser"
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+startup: services
+boot: auto
+
+# Web Interface
+webui: "http://[HOST]:[PORT:6080]"
+ingress: true
+ingress_port: 6080
+panel_icon: mdi:monitor-screenshot
+
+# Ports
+ports:
+  6080/tcp: 6080
+  5900/tcp: 5900
+ports_description:
+  6080/tcp: "noVNC web interface"
+  5900/tcp: "VNC server (direct client access)"
+
+# Storage
+map:
+  - share:rw
+
+# Options with defaults
+options:
+  # VNC Configuration
+  vnc_password: "money4band"
+  vnc_resolution: "1280x720"
+
+  # Browser Configuration
+  starting_url: "https://www.google.com"
+  auto_start_browser: true
+  browser_options: ""
+
+  # Display Configuration
+  auto_start_xterm: true
+  auto_start_window_manager: true
+
+  # Advanced VNC Options
+  auto_start_vnc: true
+  auto_start_novnc: true
+  auto_start_xvfb: true
+  x11vnc_options: ""
+  xvfb_options: ""
+  wm_options: ""
+  novnc_options: ""
+  xterm_options: ""
+
+  # Customization
+  enable_customization: false
+
+# Schema validation
+schema:
+  # VNC Configuration
+  vnc_password: "password"
+  vnc_resolution: "match(^[0-9]{3,4}x[0-9]{3,4}$)"
+
+  # Browser Configuration
+  starting_url: "url"
+  auto_start_browser: "bool"
+  browser_options: "str?"
+
+  # Display Configuration
+  auto_start_xterm: "bool"
+  auto_start_window_manager: "bool"
+
+  # Advanced VNC Options
+  auto_start_vnc: "bool"
+  auto_start_novnc: "bool"
+  auto_start_xvfb: "bool"
+  x11vnc_options: "str?"
+  xvfb_options: "str?"
+  wm_options: "str?"
+  novnc_options: "str?"
+  xterm_options: "str?"
+
+  # Customization
+  enable_customization: "bool"
+
+# Use pre-built image from GitHub Container Registry
+# Comment out 'image' and use build.yaml for local builds
+image: "ghcr.io/mrcolorr/vnc-browser-{arch}:ha-alpine"
+
