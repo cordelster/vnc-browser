@@ -135,8 +135,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Test container startup (skip ha-alpine as it requires HA supervisor environment)
       - name: Test container startup
-        if: steps.vars.outputs.SHOULD_BUILD == 'true'
+        if: steps.vars.outputs.SHOULD_BUILD == 'true' && matrix.tag != 'ha-alpine'
         run: |
           docker run -d --rm --name test-${{ matrix.tag }} \
             -p 5900:5900 -p 6080:6080 \
